@@ -1,0 +1,5 @@
+:root{--bg:#070711;--panel:#0D0C1E;--line:#28234C;--line2:#9146FF;--tx:#EEEAFE;--mut:#9692B5;--vio:#9146FF;--cy:#32CFFF;--grn:#00D9A0;--amb:#FFB547;--red:#FF526B}
+*{box-sizing:border-box}html,body,#root{height:100%}
+body{margin:0;background:radial-gradient(1200px 600px at 70% -10%,#1a0f45 0,#070711 60%);color:var(--tx);font:14px/1.4 Inter,system-ui,sans-serif}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--cy);outline-offset:2px}

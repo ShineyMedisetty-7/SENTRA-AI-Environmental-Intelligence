@@ -11,4 +11,5 @@ class Event(Base):
     event_type = Column(String, nullable=False)
     location = Column(String, nullable=True)
     description = Column(String, nullable=True)
+    person_id = Column(Integer, nullable=True, index=True)
     timestamp = Column(DateTime, default=datetime.utcnow)
