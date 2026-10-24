@@ -37,7 +37,24 @@ function Current({ ev, onDetails }) {
 function AI({ ev }) {
   const [q, setQ] = useState(''); const [st, setSt] = useState({ s: 'empty' })
   const submit = async () => { if (!q.trim()) return; setSt({ s: 'loading' })
-    try { setSt({ s: 'ok', text: await askAI(q, ev?.id), at: new Date() }) } catch (e) { setSt({ s: 'err', text: e.message }) } }
+    
+try {
+  const result = await askAI(q, ev?.id)
+
+  setSt({
+    s: 'ok',
+    text: result.answer,
+    mode: result.mode,
+    snapshotUrl: result.snapshot_url
+      ? `${API_BASE}${result.snapshot_url}`
+      : null,
+    snapshotTimestamp: result.snapshot_timestamp,
+    at: new Date(),
+  })
+} catch (e) {
+  setSt({ s: 'err', text: e.message })
+}
+}
   return (
     <section className="card c3 glow ai" aria-label="AI explanation">
       <div className="hd"><h2>✦ AI Explanation</h2><span className="tag">BETA</span></div>
@@ -45,7 +62,43 @@ function AI({ ev }) {
         {st.s === 'empty' && 'Ask a question about the selected event.'}
         {st.s === 'loading' && 'Thinking…'}
         {st.s === 'err' && <span className="err">{st.text}</span>}
-        {st.s === 'ok' && <>{st.text}<br /><small>Event: {ev?.title} · {fmt(ev?.ts)}</small></>}
+        
+{st.s === 'ok' && (
+  <>
+    <div style={{ whiteSpace: 'pre-wrap' }}>{st.text}</div>
+
+    {st.snapshotUrl && (
+      <div style={{ marginTop: 12 }}>
+        <b>Historical Camera Snapshot</b>
+
+        <img
+          src={st.snapshotUrl}
+          alt="Camera snapshot from the requested time"
+          style={{
+            display: 'block',
+            width: '100%',
+            height: 'auto',
+            marginTop: 8,
+            borderRadius: 8,
+            border: '1px solid #334155',
+          }}
+        />
+
+        {st.snapshotTimestamp && (
+          <small>
+            Snapshot time: {fmtFull(
+              new Date(Number(st.snapshotTimestamp) * 1000).toISOString()
+            )}
+          </small>
+        )}
+      </div>
+    )}
+
+    <br />
+    <small>Event: {ev?.title} · {fmt(ev?.ts)}</small>
+  </>
+)}
+
       </div>
       <textarea rows="2" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Why was this flagged?" aria-label="Question" />
       <button className="btn" style={{ marginTop: 6 }} onClick={submit} disabled={st.s === 'loading'}>Ask</button>

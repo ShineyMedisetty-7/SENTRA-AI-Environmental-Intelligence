@@ -15,6 +15,57 @@ SOURCE = os.getenv("CAMERA_SOURCE", "0")
 BOUNDARY = "frame"
 
 
+# Historical camera snapshots for time-based SENTRA questions.
+from datetime import datetime, timezone
+from pathlib import Path as FilePath
+
+SNAPSHOT_DIR = FilePath(__file__).resolve().parent / "data" / "snapshots"
+SNAPSHOT_INTERVAL_SECONDS = max(
+    1, int(os.getenv("SNAPSHOT_INTERVAL_SECONDS", "10"))
+)
+SNAPSHOT_RETENTION_DAYS = max(
+    1, int(os.getenv("SNAPSHOT_RETENTION_DAYS", "7"))
+)
+_last_snapshot_ts = 0.0
+_snapshot_lock = threading.Lock()
+
+
+def _save_snapshot(frame_bytes: bytes, frame_ts: float) -> None:
+    """Save timestamped JPEGs and remove expired snapshots."""
+    global _last_snapshot_ts
+
+    with _snapshot_lock:
+        if frame_ts - _last_snapshot_ts < SNAPSHOT_INTERVAL_SECONDS:
+            return
+
+        SNAPSHOT_DIR.mkdir(parents=True, exist_ok=True)
+        timestamp = datetime.fromtimestamp(
+            frame_ts, tz=timezone.utc
+        ).strftime("%Y%m%dT%H%M%S")
+        filename = f"CAM-1_{timestamp}_{int(frame_ts * 1000) % 1000:03d}.jpg"
+        destination = SNAPSHOT_DIR / filename
+        temporary = destination.with_suffix(".tmp")
+
+        try:
+            temporary.write_bytes(frame_bytes)
+            temporary.replace(destination)
+            _last_snapshot_ts = frame_ts
+        except OSError:
+            try:
+                temporary.unlink(missing_ok=True)
+            except OSError:
+                pass
+            return
+
+        cutoff = frame_ts - SNAPSHOT_RETENTION_DAYS * 86400
+        for old_file in SNAPSHOT_DIR.glob("CAM-1_*.jpg"):
+            try:
+                if old_file.stat().st_mtime < cutoff:
+                    old_file.unlink(missing_ok=True)
+            except OSError:
+                continue
+
+
 class _Reader:
     def __init__(self):
         self.lock = threading.Lock()
@@ -64,10 +115,15 @@ class _Reader:
                     )
 
                     if ok:
+                        frame_bytes = buf.tobytes()
+                        frame_ts = time.time()
+
                         with self.lock:
-                            self.frame = buf.tobytes()
-                            self.ts = time.time()
+                            self.frame = frame_bytes
+                            self.ts = frame_ts
                             self.error = None
+
+                        _save_snapshot(frame_bytes, frame_ts)
             finally:
                 cap.release()
 
@@ -82,6 +138,50 @@ class _Reader:
 
 _reader = _Reader()
 shutdown_camera = _reader.shutdown
+
+
+@router.get("/snapshot")
+def get_snapshot(at: float | None = None):
+    """Return the closest saved snapshot to a Unix timestamp, or the latest."""
+    from fastapi import HTTPException
+    from fastapi.responses import FileResponse
+
+    if not SNAPSHOT_DIR.is_dir():
+        raise HTTPException(status_code=404, detail="No historical snapshots are available yet.")
+
+    files = sorted(SNAPSHOT_DIR.glob("CAM-1_*.jpg"))
+    if not files:
+        raise HTTPException(status_code=404, detail="No historical snapshots are available yet.")
+
+    def file_timestamp(file_path):
+        try:
+            return file_path.stat().st_mtime
+        except OSError:
+            return None
+
+    candidates = [(file_path, file_timestamp(file_path)) for file_path in files]
+    candidates = [(file_path, ts) for file_path, ts in candidates if ts is not None]
+
+    if not candidates:
+        raise HTTPException(status_code=404, detail="No readable historical snapshots are available.")
+
+    if at is None:
+        selected, _ = max(candidates, key=lambda item: item[1])
+    else:
+        selected, selected_ts = min(candidates, key=lambda item: abs(item[1] - at))
+        # Avoid returning a misleading image when the requested time is too far away.
+        if abs(selected_ts - at) > SNAPSHOT_INTERVAL_SECONDS * 2:
+            raise HTTPException(
+                status_code=404,
+                detail="No snapshot was captured close enough to the requested time.",
+            )
+
+    return FileResponse(
+        selected,
+        media_type="image/jpeg",
+        filename=selected.name,
+        headers={"X-SENTRA-Snapshot-Time": str(file_timestamp(selected))},
+    )
 
 
 @router.get("/status")

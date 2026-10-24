@@ -49,6 +49,7 @@ app.add_middleware(
 app.include_router(events_router)
 app.include_router(camera_router)
 app.include_router(sensors_router)
+app.include_router(ai_router)
 
 
 @app.get("/")

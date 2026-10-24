@@ -65,3 +65,6 @@ Frontend1/lint_fix_backup_*/
 .env
 .env.*
 !.env.example
+
+# SENTRA camera history snapshots
+/backend/data/snapshots/
