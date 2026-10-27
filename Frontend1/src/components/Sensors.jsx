@@ -7,10 +7,9 @@ const DEF = [
   ['temperature', 'Temperature', '°C', '#B24DFF'],
   ['humidity', 'Humidity', '%', '#32CFFF'],
   ['light', 'Light Status', '', '#FFB547'],
-  ['distance', 'Distance (ToF)', 'm', '#00D9A0'],
+  ['distance', 'Distance (ToF)', 'cm', '#00D9A0'],
+  ['sound_raw', 'Sound Level (MAX4466)', 'ADC', '#FF6B9D'],
 ]
-
-const LIGHT_LEVELS = ['Dark', 'Dim', 'Low', 'Medium', 'Bright']
 
 function Spark({ pts, color }) {
   const lo = Math.min(...pts)
@@ -63,7 +62,8 @@ export default function Sensors() {
         const d = await getSensors()
         if (!on) return
 
-        if (!d) {
+        if (!d || d.source !== 'esp32') {
+          setData(d)
           setSt('missing')
           return
         }
@@ -77,9 +77,8 @@ export default function Sensors() {
 
           DEF.forEach(([key]) => {
             const value = d[key]?.value
-
-            if (typeof value === 'number') {
-              next[key] = [...(next[key] || []), value].slice(-30)
+            if (typeof value === 'number' || typeof value === 'boolean') {
+              next[key] = [...(next[key] || []), Number(value)].slice(-30)
             }
           })
 
@@ -94,7 +93,7 @@ export default function Sensors() {
     }
 
     tick()
-    const timer = setInterval(tick, 5000)
+    const timer = setInterval(tick, 2000)
 
     return () => {
       on = false
@@ -104,17 +103,15 @@ export default function Sensors() {
 
   const badge =
     st === 'ok'
-      ? ['Connected', '']
+      ? ['ESP32 Connected', '']
       : st === 'loading'
         ? ['Connecting…', 'dm']
-        : ['Disconnected', 'off']
+        : st === 'missing'
+          ? ['Waiting for ESP32', 'dm']
+          : ['Disconnected', 'off']
 
   return (
-    <section
-      className="card c5"
-      id="sensors"
-      aria-label="Sensor readings"
-    >
+    <section className="card c5" id="sensors" aria-label="Sensor readings">
       <div className="hd">
         <h2>Sensor Readings</h2>
         <span className="pill">
@@ -130,7 +127,7 @@ export default function Sensors() {
           const age = timestamp
             ? (now - new Date(timestamp).getTime()) / 1000
             : null
-          const stale = age !== null && age > 60
+          const stale = age !== null && age > 30
           const value = reading?.value
 
           let displayValue = '—'
@@ -139,9 +136,9 @@ export default function Sensors() {
             if (key === 'motion') {
               displayValue = value ? 'Detected' : 'Clear'
             } else if (key === 'light') {
-              // Digital DO gives only two states, not five measured levels.
-              // Adjust this mapping after checking your module's response.
-              displayValue = Number(value) === 1 ? 'Dim' : 'Bright'
+              displayValue = `Digital ${value}`
+            } else if (key === 'sound_raw') {
+              displayValue = Number(value).toLocaleString()
             } else {
               displayValue = value
             }
@@ -149,23 +146,21 @@ export default function Sensors() {
 
           return (
             <div className="s" key={key}>
-              <b>{st === 'ok' ? displayValue : '—'}</b>
+              <b>{displayValue}</b>
               {unit && ` ${unit}`}
               <small>{name}</small>
 
               {key === 'light' ? (
                 <small>
-                  {value == null
-                    ? 'Waiting for sensor'
-                    : `Digital reading: ${value}`}
+                  {value == null ? 'Waiting for sensor' : 'Raw digital state'}
                 </small>
+              ) : key === 'sound_raw' && value != null ? (
+                <small>Raw ADC · Not calibrated to dB</small>
               ) : hist[key]?.length >= 3 ? (
                 <Spark pts={hist[key]} color={color} />
               ) : (
                 <small>
-                  {value == null
-                    ? 'Waiting for sensor'
-                    : 'Collecting trend…'}
+                  {value == null ? 'Waiting for sensor' : 'Collecting trend…'}
                 </small>
               )}
 
@@ -181,14 +176,12 @@ export default function Sensors() {
 
       {st === 'missing' && (
         <small className="note">
-          No sensor data returned. Check GET /sensors/latest.
+          Waiting for real ESP32 readings. Check the device and GET /sensors/latest.
         </small>
       )}
 
       {st === 'error' && (
-        <small className="note err">
-          Sensor request failed: {msg}
-        </small>
+        <small className="note err">Sensor request failed: {msg}</small>
       )}
     </section>
   )

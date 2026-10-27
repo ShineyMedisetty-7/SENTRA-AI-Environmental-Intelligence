@@ -9,15 +9,19 @@ from pydantic import BaseModel, Field
 router = APIRouter(prefix="/sensors", tags=["Sensors"])
 _lock = Lock()
 
+def empty_reading():
+    return {"value": None, "timestamp": None}
+
 _latest = {
-    "status": "success",
-    "source": "simulated",
+    "status": "waiting",
+    "source": "none",
     "device_id": None,
-    "motion": {"value": None, "timestamp": None},
-    "temperature": {"value": None, "timestamp": None},
-    "humidity": {"value": None, "timestamp": None},
-    "light": {"value": None, "timestamp": None},
-    "distance": {"value": None, "timestamp": None},
+    "motion": empty_reading(),
+    "temperature": empty_reading(),
+    "humidity": empty_reading(),
+    "light": empty_reading(),
+    "distance": empty_reading(),
+    "sound_raw": empty_reading(),
 }
 
 
@@ -28,6 +32,7 @@ class SensorReading(BaseModel):
     humidity: float = Field(ge=0, le=100)
     light: int = Field(ge=0, le=1)
     distance: Optional[float] = Field(default=None, ge=0, le=4000)
+    sound_raw: Optional[int] = Field(default=None, ge=0, le=4095)
 
 
 @router.post("/ingest")
@@ -59,6 +64,10 @@ def ingest_sensor_readings(reading: SensorReading):
                 "value": reading.distance,
                 "timestamp": timestamp if reading.distance is not None else None,
             },
+            "sound_raw": {
+                "value": reading.sound_raw,
+                "timestamp": timestamp if reading.sound_raw is not None else None,
+            },
         })
 
     return {
@@ -79,4 +88,5 @@ def get_latest_sensor_readings():
             "humidity": dict(_latest["humidity"]),
             "light": dict(_latest["light"]),
             "distance": dict(_latest["distance"]),
+            "sound_raw": dict(_latest["sound_raw"]),
         }
