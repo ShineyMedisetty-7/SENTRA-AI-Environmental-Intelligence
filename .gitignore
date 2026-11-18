@@ -68,3 +68,10 @@ Frontend1/lint_fix_backup_*/
 
 # SENTRA camera history snapshots
 /backend/data/snapshots/
+
+# Local database backups
+database_backups/
+*.dump
+
+# Temporary editor backups
+*.save

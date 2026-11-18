@@ -93,3 +93,165 @@ select{background:#0006;color:var(--tx);border:1px solid var(--line);border-radi
       height: 350px;
     }
   }
+
+/* Compact sensor panel + chart side-by-side */
+.dashboard-sensor-chart {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(300px, 0.85fr);
+  gap: 14px;
+  align-items: start;
+  min-width: 0;
+}
+
+.dashboard-sensor-panel,
+.dashboard-chart-panel {
+  min-width: 0;
+  overflow: hidden;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 12px;
+}
+
+.dashboard-sensor-panel .compact-dashboard-sensors {
+  padding: 0;
+}
+
+.dashboard-sensor-panel .cds-heading {
+  margin-bottom: 10px;
+}
+
+.dashboard-sensor-panel .cds-heading h2 {
+  font-size: 15px;
+}
+
+.dashboard-sensor-panel .cds-heading p {
+  font-size: 11px;
+}
+
+.dashboard-sensor-panel .cds-summary {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  margin: 8px 0 12px;
+}
+
+.dashboard-sensor-panel .cds-summary > div {
+  padding: 7px;
+  gap: 4px;
+}
+
+.dashboard-sensor-panel .cds-summary strong {
+  font-size: 12px;
+}
+
+.dashboard-sensor-panel .cds-summary span {
+  font-size: 10px;
+}
+
+.dashboard-sensor-panel .cds-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.dashboard-sensor-panel .cds-card {
+  padding: 9px;
+  border-radius: 9px;
+}
+
+.dashboard-sensor-panel .cds-value {
+  font-size: 17px;
+  margin: 6px 0 3px;
+}
+
+.dashboard-sensor-panel .cds-name,
+.dashboard-sensor-panel .cds-status {
+  font-size: 10px;
+}
+
+.dashboard-sensor-panel .cds-model,
+.dashboard-sensor-panel .cds-note,
+.dashboard-sensor-panel .cds-card-footer {
+  font-size: 9px;
+}
+
+.dashboard-sensor-panel .cds-card-footer {
+  margin-top: 7px;
+}
+
+.dashboard-sensor-panel .cds-footer {
+  font-size: 10px;
+  margin-top: 10px;
+}
+
+.dashboard-chart-panel > .card {
+  width: 100%;
+  min-width: 0;
+}
+
+@media (max-width: 1100px) {
+  .dashboard-sensor-chart {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .dashboard-sensor-panel .cds-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-sensor-panel .cds-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* Improve readability of compact sensor cards */
+.sentra-sensor-ai-row .cds-heading h2 {
+  font-size: 15px !important;
+}
+
+.sentra-sensor-ai-row .cds-heading p {
+  font-size: 11px !important;
+  line-height: 1.4;
+}
+
+.sentra-sensor-ai-row .cds-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 6px !important;
+}
+
+.sentra-sensor-ai-row .cds-card {
+  padding: 8px 7px !important;
+}
+
+.sentra-sensor-ai-row .cds-name {
+  font-size: 10px !important;
+  line-height: 1.35 !important;
+}
+
+.sentra-sensor-ai-row .cds-status {
+  font-size: 9px !important;
+}
+
+.sentra-sensor-ai-row .cds-value {
+  font-size: 15px !important;
+  font-weight: 600;
+  line-height: 1.4 !important;
+  margin: 6px 0 !important;
+  overflow-wrap: anywhere;
+}
+
+.sentra-sensor-ai-row .cds-model {
+  font-size: 10px !important;
+  line-height: 1.35 !important;
+}
+
+.sentra-sensor-ai-row .cds-note,
+.sentra-sensor-ai-row .cds-card-footer {
+  font-size: 9px !important;
+  line-height: 1.35 !important;
+}
+
+.sentra-sensor-ai-row .cds-footer {
+  font-size: 10px !important;
+}

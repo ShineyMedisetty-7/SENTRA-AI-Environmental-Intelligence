@@ -3,7 +3,9 @@ import { lazy, Suspense } from 'react'
 import { getEvents, askAI, health, API_BASE } from './services/api'
 import LiveEnvironment from './components/LiveEnvironment'
 import Sensors from './components/Sensors'
+// Remove the duplicate import statement
 import ActivityChart from './components/ActivityChart'
+import CompactSensors from './components/CompactSensors'
 const DigitalTwin = lazy(() => import('./components/DigitalTwin'))
 
 const P = {
@@ -223,20 +225,94 @@ useEffect(() => {
         </header>
 
 <main className="grid" id="top">
-  {nav === 'Dashboard' && (
-    <>
-      <LiveEnvironment paused={paused} setPaused={setPaused} />
-      <Suspense fallback={<section className="card c6"><div className="state">Loading 3D scene…</div></section>}>
-        <DigitalTwin />
-      </Suspense>
-      <Sensors />
-      <Current ev={sel} onDetails={() => setModal('event')} />
-      <AI ev={sel} />
-      <Events events={events} status={status} q={q} sel={sel} setSel={setSel} onAll={() => setModal('all')} onRetry={load} />
-      <ActivityChart events={events} status={status} />
-      <Zones onManage={() => setModal('zones')} />
-    </>
-  )}
+
+{nav === 'Dashboard' && (
+  <>
+    {/* TOP ROW: Live Camera and Digital Twin */}
+    <LiveEnvironment
+      paused={paused}
+      setPaused={setPaused}
+    />
+
+    <Suspense
+      fallback={
+        <section className="card c6">
+          <div className="state">Loading 3D scene…</div>
+        </section>
+      }
+    >
+      <DigitalTwin />
+    </Suspense>
+
+    {/* MIDDLE ROW: Sensors on left, AI Explanation on right */}
+    <section
+      style={{
+        gridColumn: '1 / -1',
+        display: 'grid',
+        gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)',
+        gap: '12px',
+        alignItems: 'start',
+        minWidth: 0,
+      }}
+      className="sentra-sensor-ai-row"
+    >
+      {/* LEFT: Compact live sensors */}
+      <div
+        style={{
+          minWidth: 0,
+          padding: '10px',
+          border: '1px solid var(--line)',
+          borderRadius: '12px',
+          background: 'var(--panel)',
+          overflow: 'hidden',
+        }}
+      >
+        <CompactSensors />
+      </div>
+
+      {/* RIGHT: AI Chatbot / Explanation */}
+      <div
+        style={{
+          minWidth: 0,
+          padding: '10px',
+          border: '1px solid var(--line)',
+          borderRadius: '12px',
+          background: 'var(--panel)',
+          overflow: 'hidden',
+        }}
+        className="sentra-ai-panel"
+      >
+        <AI ev={sel} />
+      </div>
+    </section>
+
+    {/* BOTTOM ROW: Other dashboard sections */}
+    <Current
+      ev={sel}
+      onDetails={() => setModal('event')}
+    />
+
+    <Events
+      events={events}
+      status={status}
+      q={q}
+      sel={sel}
+      setSel={setSel}
+      onAll={() => setModal('all')}
+      onRetry={load}
+    />
+
+    <ActivityChart
+      events={events}
+      status={status}
+    />
+
+    <Zones
+      onManage={() => setModal('zones')}
+    />
+  </>
+)}
+
 
   {nav === 'Live View' && (
     <div className="full-page">
@@ -269,20 +345,18 @@ useEffect(() => {
     </div>
   )}
 
-  {nav === 'Sensors' && (
-    <div className="full-page">
-      <h1>Sensor Monitoring</h1>
-      <Sensors />
-    </div>
-  )}
+{nav === 'Sensors' && (
+  <div className="full-page sensor-full-page">
+    <Sensors />
+  </div>
+)}
 
-  {nav === 'Environment' && (
-    <div className="full-page">
-      <h1>Environment Zones</h1>
-      <Zones onManage={() => setModal('zones')} />
-      <Sensors />
-    </div>
-  )}
+{nav === 'Environment' && (
+  <div className="full-page">
+    <h1>Environment Zones</h1>
+    <Zones onManage={() => setModal('zones')} />
+  </div>
+)}
 
   {nav === 'History' && (
     <div className="full-page">
